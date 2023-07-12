@@ -15,7 +15,9 @@ json.array! videos do |video|
   json.likes video.feeling.where(:status => 'like').count
   json.dislikes video.feeling.where(:status => 'dislike').count
   json.comments video.comments.count
-  json.status video.video_status
+  json.status 'Public' if video.video_status == 'is_public'
+  json.status 'Private' if video.video_status == 'unpublic'
+  json.status 'Scheduling' if video.video_status == 'scheduling'
   json.upload_video_at video.upload_video_at
   # json.comments video.comment.count
 end
