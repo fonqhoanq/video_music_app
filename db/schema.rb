@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2023_06_11_143809) do
+ActiveRecord::Schema.define(version: 2023_07_10_025244) do
 
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
@@ -53,6 +53,7 @@ ActiveRecord::Schema.define(version: 2023_06_11_143809) do
     t.bigint "video_id", null: false
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.integer "status", default: 0
     t.index ["user_id"], name: "index_comments_on_user_id"
     t.index ["video_id"], name: "index_comments_on_video_id"
   end
@@ -169,6 +170,16 @@ ActiveRecord::Schema.define(version: 2023_06_11_143809) do
     t.index ["video_id"], name: "index_singer_notifications_on_video_id"
   end
 
+  create_table "singer_replies", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.string "text"
+    t.bigint "singer_id", null: false
+    t.bigint "comment_id", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["comment_id"], name: "index_singer_replies_on_comment_id"
+    t.index ["singer_id"], name: "index_singer_replies_on_singer_id"
+  end
+
   create_table "singers", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name"
     t.integer "age"
@@ -280,6 +291,8 @@ ActiveRecord::Schema.define(version: 2023_06_11_143809) do
   add_foreign_key "replies", "users"
   add_foreign_key "singer_notifications", "singers"
   add_foreign_key "singer_notifications", "videos"
+  add_foreign_key "singer_replies", "comments"
+  add_foreign_key "singer_replies", "singers"
   add_foreign_key "subscribes", "singers"
   add_foreign_key "subscribes", "users"
   add_foreign_key "user_playlists", "playlists"
