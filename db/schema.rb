@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2023_07_10_025244) do
+ActiveRecord::Schema.define(version: 2023_07_21_034819) do
 
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
@@ -124,7 +124,25 @@ ActiveRecord::Schema.define(version: 2023_07_10_025244) do
     t.integer "playlist_status"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.integer "playlist_type", default: 0
     t.index ["user_id"], name: "index_own_playlists_on_user_id"
+  end
+
+  create_table "playlist_by_topic_videos", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "video_id", null: false
+    t.bigint "playlist_by_topic_id", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["playlist_by_topic_id"], name: "index_playlist_by_topic_videos_on_playlist_by_topic_id"
+    t.index ["video_id"], name: "index_playlist_by_topic_videos_on_video_id"
+  end
+
+  create_table "playlist_by_topics", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.string "title"
+    t.integer "playlist_type"
+    t.integer "video_numbers", default: 0
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
   end
 
   create_table "playlist_videos", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -283,6 +301,8 @@ ActiveRecord::Schema.define(version: 2023_07_10_025244) do
   add_foreign_key "own_playlist_videos", "own_playlists"
   add_foreign_key "own_playlist_videos", "videos"
   add_foreign_key "own_playlists", "users"
+  add_foreign_key "playlist_by_topic_videos", "playlist_by_topics"
+  add_foreign_key "playlist_by_topic_videos", "videos"
   add_foreign_key "playlist_videos", "playlists"
   add_foreign_key "playlist_videos", "videos"
   add_foreign_key "playlists", "hash_tags"

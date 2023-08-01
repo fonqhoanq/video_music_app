@@ -29,5 +29,5 @@ class Video < ApplicationRecord
     ["feeling", "singer", "thumbnails_attachment", "thumbnails_blob", "url_attachment", "url_blob"]
   end
   # validates :title, length: {minimum: 10, maximum: 100}
-  # validates :description, length: {minimum: 30, maximum: 1000}
+  # validates :description, length: {minimum: 30, maximum: 800}
 end
