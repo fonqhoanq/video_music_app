@@ -27,7 +27,7 @@ class VideosController < ApplicationController
       handle_send_notification(@video, params[:video][:title]) if @video.title.blank? && params[:video][:video_status] != 'scheduling'
 
       handle_send_scheduling_video_notification(@video, params[:video][:title], params[:video][:singer_id]) if @video.title.blank? && params[:video][:video_status] == 'scheduling'
-
+      handle_send_scheduling_video_notification_for_member(@video, params[:video][:title], params[:upload_video_at]) if @video.title.blank? && params[:video][:video_status] == 'scheduling'
       @video.update!(update_params)
       VideoHashTag.where(video_id: @video.id).destroy_all
       params[:video][:hash_tags].each do |hash_tag|
@@ -54,7 +54,7 @@ class VideosController < ApplicationController
   def show_public_videos
     @public_videos = Video.where(video_status: :is_public)
                           .paginate(page: params[:page], per_page: 12)
-                          .order("created_at DESC")
+                          .order("RAND()")
   end
   
   def show_singer_public_videos
@@ -64,10 +64,6 @@ class VideosController < ApplicationController
   end
 
   def show_trending_videos
-    videos = Video.all
-    if should_execute_calculate_trending_score?(videos.first)
-      CalculateTrendingScoreService.new(videos).execute
-    end
     @trending_videos = Video.where(video_status: :is_public)
                             .order(trending_score: :desc)
                             .paginate(page: params[:page], per_page: 12)
@@ -86,7 +82,10 @@ class VideosController < ApplicationController
                             .where("own_playlists.user_id = #{params[:user_id]}")
                             .where("own_playlists.id = #{params[:playlist_id]}")
                             .map(&:id)
-    @recommend_for_playlist_videos = Video.where.not(id: @playlist_video_ids)
+    category_ids = Video.where(id: @playlist_video_ids).map(&:category_id).uniq
+    videos = Video.where(category_id: category_ids, video_status: :is_public)
+    @recommend_for_playlist_videos = videos.where.not(id: @playlist_video_ids)
+                                          .order("RAND()")
                                           .limit(5)
   end
 
@@ -129,26 +128,8 @@ class VideosController < ApplicationController
   def update_views
     duration = params[:duration].to_f
     current_time = params[:current_time].to_f
-    if duration < 60.0 && current_time != duration
-      render json: {message: "Cant update views for this video"}
-      return
-    end
-    if (60..240).include?(duration) && current_time / duration < 0.7
-      render json: {message: "Cant update views for this video"}
-      return
-    end
-    if duration > 240 && current_time / duration < 0.5
-      render json: {message: "Cant update views for this video"}
-      return
-    end
-    ActiveRecord::Base.transaction do
-      History.create!(user_id: params[:user_id], video_id: params[:id], history_type: :watch, current_time: current_time, duration: duration)
-      if @video.increment!(:views)
-        render json: @video
-      else
-        render json: @video.errors, status: :unprocessable_entity
-      end
-    end
+    user_id = params[:user_id]
+    CalculateViewWorker.perform_async(@video.id,user_id, duration, current_time)
   end
 
   def show_videos_by_category
@@ -158,6 +139,13 @@ class VideosController < ApplicationController
                    .paginate(page: params[:page], per_page: 12)
                    .order(created_at: :desc)
 
+  end
+
+  def show_new_release_videos
+    @new_release_videos = Video.where(video_status: :is_public)
+                               .order(created_at: :desc)
+                               .limit(10)
+                               .order("RAND()")
   end
 
   def target_members_to_sent_notification
@@ -187,6 +175,23 @@ class VideosController < ApplicationController
                               )
   end
 
+  def handle_send_scheduling_video_notification_for_member(video, title, schedule_at)
+    target_members_to_sent_notification.each do |member|
+      MemberNotification.create!(video_id: video.id,
+                                  content: "Comming video: #{title}. Upload at #{schedule_at}",
+                                  user_id: member.id,
+                                  noti_status: :sent,
+                                  noti_type: :comming_video_notification
+      )
+    end
+  end
+
+  def test
+    user = User.find(13)
+
+    testdata = OwnPlaylistService.new(user).create_daily_playlist
+    render json: testdata
+  end
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_video
